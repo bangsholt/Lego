@@ -9,18 +9,6 @@ import lejos.nxt.SensorPort;
 import lejos.nxt.TouchSensor;
 import lejos.nxt.addon.NXTCam;
 import lejos.robotics.navigation.DifferentialPilot;
-//(x, y), (w, h)
-//24, 53, 35, 32
-
-//25, 55
-//60, 90
-
-//135, 50
-//175, 85
-
-//150, 50
-
-//40*30 cm square that ball is visible and bigger than 10x10 pixels
 
 public class Main {
 
@@ -28,69 +16,72 @@ public class Main {
 
 	private static DifferentialPilot pilot = new DifferentialPilot(4.4, 14,
 			Motor.C, Motor.A);
-	private static NXTCam cam = new NXTCam(SensorPort.S2);
+	
+	//Vector to hold all the rectangles that the camera detects
 	private static Vector<Rectangle> rect;
+	//grabArea is the area where the claws will close on the ball
 	private static Rectangle grabArea = new Rectangle(25, 50, 150, 70);
+	//driveForwardArea is the area in which the ball has to be for the robot to go forward
 	private static Rectangle driveForwardArea = new Rectangle(40, 0, 80, 150);
+	//leftForwardArea is the area where the robot will turn to the left
 	private static Rectangle leftForwardArea = new Rectangle(0, 0, 30, 250);
+	//rightForwardArea is the area where the robot will turn to the right
 	private static Rectangle rightForwardArea = new Rectangle(120, 0, 20, 250);
-	private static TouchSensor touchSensor = new TouchSensor(SensorPort.S3);
+	//The sensors connected to the robot
 	private static LightSensor lightSensor = new LightSensor(SensorPort.S1);
-
+	private static NXTCam cam = new NXTCam(SensorPort.S2);
+	private static TouchSensor touchSensor = new TouchSensor(SensorPort.S3);
+	//Boolean used to tell if the claw is closed or not
 	private static boolean clawIsClosed = false;
-
+	//An enum used to iterate through the different states in turning the robot to find the ball
 	public static enum searchState {
-		RIGHT1, RIGHT2, RIGHT3, RETRIGHT1, RETRIGHT2, RETRIGHT3, LEFT1, LEFT2, LEFT3, RETLEFT1, RETLEFT2, RETLEFT3, FORWARD
+		//This is the 3 steps it take to turn to the right
+		RIGHT1, RIGHT2, RIGHT3, 
+		//And the three steps returning
+		RETRIGHT1, RETRIGHT2, RETRIGHT3, 
+		//Going to the left
+		LEFT1, LEFT2, LEFT3,
+		//And back
+		RETLEFT1, RETLEFT2, RETLEFT3, 
+		//So it can go forward again
+		FORWARD
 	}
-
+	//The current state of where the robot should turn
 	private static searchState state = searchState.RIGHT1;
-
+	//How many rectangles are there currently
 	private static int noOfRectangles;
 
 	public static void main(String args[]) throws Exception {
+		//Reset in order to know how little or much to turn later on
 		Motor.A.resetTachoCount();
 		Motor.C.resetTachoCount();
-
+		//Claw Motorspeed
 		Motor.B.setSpeed(180);
+		//Turn on the camera
 		cam.enableTracking(true);
+		//Give the camera a while to boot up properly(This is guaranteed to happen in ~100 ms
+		//but cutting some serious slack is ok here)
 		Thread.sleep(1000);
+		//Set the robot to run 15 * wheel diameter per second
 		pilot.setTravelSpeed(15);
+		//Set the robot to rotate 60 degress per second
 		pilot.setRotateSpeed(60);
+		//Initialize noOfRectangles to be 0, as no reads have happened yet
 		noOfRectangles = 0;
+		//To make it possible to break the execution of the robot
 		while (!Button.ESCAPE.isDown()) {
+			//Turn on the camera - there is no telling for how long the robot has been waiting for this to happen
 			cam.enableTracking(true);
+			//Get the new objects that's tracked
 			refreshView();
+			//Output how many objects that currently are tracked
 			LCD.drawString("Objects: " + cam.getNumberOfObjects(), 0, 0);
-
-			// if (rect.elementAt(0) != null) {
-			// LCD.drawInt(rect.elementAt(0).x, 0, 1);
-			// LCD.drawChar(',', 3, 1);
-			// LCD.drawInt(rect.elementAt(0).y, 4, 1);
 			//
-			// LCD.drawInt(rect.elementAt(0).height, 0, 2);
-			// LCD.drawChar(',', 3, 2);
-			// LCD.drawInt(rect.elementAt(0).width, 4, 2);
-			// }
-			if (/* !ballIsInClaw() && */!clawIsClosed) {
+			if (!clawIsClosed) {
 				while (!isBallWithinGrasp()) {
 					refreshView();
 
 					isBallFound();
-					// switch (state) {
-					// case FORWARD:
-					// // pilot.rotate(45);
-					// pilot.travel(10);
-					// state = searchState.FORWARD;
-					// break;
-					// case LEFT:
-					// pilot.rotate(45);
-					// state = searchState.RIGHT;
-					// break;
-					// case RIGHT:
-					// pilot.rotate(-87);
-					// state = searchState.FORWARD;
-					// break;
-					// }
 					LCD.drawString("Objects: " + cam.getNumberOfObjects(), 0, 0);
 				}
 			} else {
