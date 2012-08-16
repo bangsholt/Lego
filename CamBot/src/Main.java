@@ -20,7 +20,7 @@ public class Main {
 	//Vector to hold all the rectangles that the camera detects
 	private static Vector<Rectangle> rect;
 	//grabArea is the area where the claws will close on the ball
-	private static Rectangle grabArea = new Rectangle(25, 50, 150, 70);
+	private static Rectangle grabArea = new Rectangle(25, 50, 120, 40);
 	//driveForwardArea is the area in which the ball has to be for the robot to go forward
 	private static Rectangle driveForwardArea = new Rectangle(40, 0, 80, 150);
 	//leftForwardArea is the area where the robot will turn to the left
